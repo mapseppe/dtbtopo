@@ -27,9 +27,11 @@ def createEmptyLayer(ivrinummer):
     #Voeg velden toe aan laag
     arcpy.AddMessage("Velden toevoegen aan laag")
     arcpy.management.AddField(layer, "Volgnummer", "TEXT")
+    arcpy.management.AddField(layer, "Zichtbaar", "TEXT")
     arcpy.management.AddField(layer, "Fout", "TEXT")
     arcpy.management.AddField(layer, "Omschrijving", "TEXT", field_length=2000)
     arcpy.management.AddField(layer, "Bijlage_nr", "TEXT")
+    arcpy.management.AssignDefaultToField(layer, "Zichtbaar", "Ja")
  
     #Check of het domein al bestaat en zo niet maak het aan
     arcpy.AddMessage("Check of domein al bestaat")

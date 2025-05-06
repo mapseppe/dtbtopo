@@ -15,31 +15,44 @@ def checkIVRIpath(ivrinummer):
     ivri_path = rf"{base_outputpath}\{ivrinummer}"
     #Bestaat het IVRI-Nummer?
     if os.path.exists(ivri_path) and os.path.isdir(ivri_path):
+        
         #Ja IVRI-nummer en folder bestaat op M-schijf
         arcpy.AddMessage(f"Outputdirectory: {ivri_path}")
         toets_path = rf"{ivri_path}\toets"
+        
         if os.path.exists(toets_path) and os.path.isdir(toets_path):
             writeOutput(toets_path, inputlayer)
         else:
             arcpy.AddMessage(f"Outputdirectory aanmaken {toets_path}")
             os.makedirs(toets_path)
-            os.makedirs(rf"{toets_path}\toets_shapefile")
+            os.makedirs(rf"{toets_path}\toets_totaal")
             writeOutput(toets_path, inputlayer)
+            
     #Wanneer M:\IVRI\ivrinr niet bestaat
     else:
         arcpy.AddError(f"IVRI Pad: {ivri_path} bestaat niet")
     
-    
 def writeOutput(toetspath, inputlayer):
-    #Save feature
-    arcpy.AddMessage(f"shapefile opslaan")
-    shp_outputpath = rf"{toetspath}\toets_shapefile\bevindingen.shp"
+    #Save feature (alles)
+    arcpy.AddMessage(f"totaal-shapefile opslaan")
+    shp_outputpath = rf"{toetspath}\toets_totaal\bevindingen-totaal.shp"
     arcpy.management.CopyFeatures(inputlayer, shp_outputpath)
+    
+    #Save feature met 'Zichtbaar = Ja'
+    arcpy.AddMessage(f"on-shapefile opslaan")
+    toetsnr = 1
+    while os.path.exists(rf"{toetspath}\toets_on_{toetsnr}"):
+        toetsnr += 1
+    toetspath_on = rf"{toetspath}\toets_on_{toetsnr}"
+    os.makedirs(toetspath_on)
+    shapepath_on = rf"{toetspath_on}\bevindingen.shp"
+    arcpy.management.SelectLayerByAttribute(inputlayer, "NEW_SELECTION", '"Zichtbaar" = \'Ja\'')
+    arcpy.management.CopyFeatures(inputlayer, shapepath_on)
     
     #Make it a zipfile
     arcpy.AddMessage(f"shapefile zippen")
-    shp_folder = rf"{toetspath}\toets_shapefile"
-    zip_outputpath = rf"{toetspath}\toets_shapefile.zip"
+    shp_folder = rf"{toetspath}\toets_on_{toetsnr}"
+    zip_outputpath = rf"{toetspath}\toets_on_{toetsnr}.zip"
     with zipfile.ZipFile(zip_outputpath, 'w', zipfile.ZIP_DEFLATED) as zipf:
         for root, dirs, files in os.walk(shp_folder):
             for file in files:
@@ -53,7 +66,7 @@ def writeOutput(toetspath, inputlayer):
     kolom2 = "Fout"
     kolom3 = "Omschrijving"
     kolom4 = "Bijlage_nr"
-    txtfile_outputpath = rf"{toetspath}\toets_tekst.txt"
+    txtfile_outputpath = rf"{toetspath}\toets_tekst_{toetsnr}.txt"
     with open(txtfile_outputpath, "w", encoding="utf-8") as file:
         file.write(f"{kolom1}\t{kolom2}\t{kolom3}\t{kolom4}\n")
         with arcpy.da.SearchCursor(inputlayer, [kolom1, kolom2, kolom3, kolom4]) as cursor:
