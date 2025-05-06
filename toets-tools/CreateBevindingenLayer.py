@@ -31,6 +31,8 @@ def createEmptyLayer(ivrinummer):
     arcpy.management.AddField(layer, "Fout", "TEXT")
     arcpy.management.AddField(layer, "Omschrijving", "TEXT", field_length=2000)
     arcpy.management.AddField(layer, "Bijlage_nr", "TEXT")
+    arcpy.management.AddField(layer, "xcoord", "LONG")
+    arcpy.management.AddField(layer, "ycoord", "LONG")
     arcpy.management.AssignDefaultToField(layer, "Zichtbaar", "Ja")
  
     #Check of het domein al bestaat en zo niet maak het aan

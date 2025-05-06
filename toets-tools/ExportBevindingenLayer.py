@@ -33,6 +33,10 @@ def checkIVRIpath(ivrinummer):
         arcpy.AddError(f"IVRI Pad: {ivri_path} bestaat niet")
     
 def writeOutput(toetspath, inputlayer):
+    #Vul X en Y coördinaten in
+    arcpy.management.CalculateGeometryAttributes(inputlayer, [["xcoord", "POINT_X"],
+                                                              ["ycoord", "POINT_Y"]])
+        
     #Save feature (alles)
     arcpy.AddMessage(f"totaal-shapefile opslaan")
     shp_outputpath = rf"{toetspath}\toets_totaal\bevindingen-totaal.shp"
@@ -66,15 +70,26 @@ def writeOutput(toetspath, inputlayer):
     kolom2 = "Fout"
     kolom3 = "Omschrijving"
     kolom4 = "Bijlage_nr"
+    kolom5 = "xcoord"
+    kolom6 = "ycoord"
     txtfile_outputpath = rf"{toetspath}\toets_tekst_{toetsnr}.txt"
     with open(txtfile_outputpath, "w", encoding="utf-8") as file:
-        file.write(f"{kolom1}\t{kolom2}\t{kolom3}\t{kolom4}\n")
-        with arcpy.da.SearchCursor(inputlayer, [kolom1, kolom2, kolom3, kolom4]) as cursor:
+        with arcpy.da.SearchCursor(inputlayer, [kolom1, kolom2, kolom3, kolom4, kolom5, kolom6]) as cursor:
             for row in cursor:
                 volgnummer = row[0] if row[0] is not None else ""
                 fout = row[1] if row[1] is not None else ""
                 omschrijving = row[2] if row[2] is not None else ""
                 bijlage = row[3] if row[3] is not None else ""
-                file.write(f"{volgnummer}\t{fout}\t{omschrijving}\t{bijlage}\n")
+                if bijlage == "":
+                    bijlagetxt = ""
+                else:
+                    bijlagetxt = f"Zie bijlage {bijlage}."
+                xcoord = row[4] if row[4] is not None else ""
+                ycoord = row[5] if row[5] is not None else ""
+                file.write(f"Zie volgnummer {volgnummer} in het meegestuurde shapefile bestand, ter plaatse van x={xcoord}, y={ycoord}\n"
+                           + f"{fout}\n"
+                           + f"{omschrijving}\n"
+                           + f"{bijlagetxt}\n"
+                           + "--------------------------------\n")
 
 checkIVRIpath(ivrinummer)
