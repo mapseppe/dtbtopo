@@ -1,4 +1,5 @@
 import arcpy
+from random import uniform
 
 #interpreter C:\Program Files\ArcGIS\Pro\bin\Python\envs\arcgispro-py3
 
@@ -34,6 +35,9 @@ def createDomain():
         arcpy.management.AddCodedValueToDomain(gdb, "fouten_domein", fouttype, domeinkeuzes[fouttype])
 
 def deleteDomain():
-    arcpy.management.DeleteDomain(gdb, "fouten_domein")
+    arcpy.AddMessage("Oud domein re-namen")
+    randomnr = uniform(100000, 999999)
+    domeinrename = f"fouten_domein{randomnr}"
+    arcpy.management.AlterDomain(gdb, "fouten_domein", domeinrename)
 
 checkCurrentDomains()
