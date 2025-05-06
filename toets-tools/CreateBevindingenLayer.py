@@ -1,0 +1,61 @@
+import arcpy
+
+#interpreter C:\Program Files\ArcGIS\Pro\bin\Python\envs\arcgispro-py3
+
+#Environment
+arcpy.env.overwriteOutput = True
+
+#Parameter
+ivrinummer = arcpy.GetParameterAsText(0) #Configure parameter: Input, Text, Required
+outputlayer = arcpy.GetParameterAsText(1) #Configure parameter: Output, Feature Layer, Derived
+
+#Default ArcPro en Geodatabase constants
+arcproj = arcpy.mp.ArcGISProject("CURRENT")
+gdb = arcproj.defaultGeodatabase
+
+#Doorloop elke DTB layer in the output.gdb
+def createEmptyLayer(ivrinummer):
+    #Nieuwe layer voor huidige ArcPro sessie
+    arcpy.AddMessage("Nieuwe laag creëren")
+    layername = rf"Bevindingen_{ivrinummer}"
+    layer = arcpy.management.CreateFeatureclass(
+        out_path=gdb,
+        out_name=layername,
+        geometry_type="POINT",
+        spatial_reference=arcpy.SpatialReference(28992))
+    
+    #Voeg velden toe aan laag
+    arcpy.AddMessage("Velden toevoegen aan laag")
+    arcpy.management.AddField(layer, "Volgnummer", "TEXT")
+    arcpy.management.AddField(layer, "Fout", "TEXT")
+    arcpy.management.AddField(layer, "Omschrijving", "TEXT", field_length=2000)
+    arcpy.management.AddField(layer, "Bijlage_nr", "TEXT")
+ 
+    #Check of het domein al bestaat en zo niet maak het aan
+    arcpy.AddMessage("Check of domein al bestaat")
+    domains = arcpy.da.ListDomains(gdb)
+    domain_names = [d.name for d in domains]
+    if "fouten_domein" not in domain_names:
+        createAndAssignDomains(layer)  
+    arcpy.AddMessage("Domein toevoegen aan nieuwe layer veld")
+    arcpy.management.AssignDomainToField(layer, "Fout", "fouten_domein")  
+    
+    #Apply standaard symbologie voor layer
+    arcpy.AddMessage("Laag toevoegen aan project")
+    arcpy.SetParameter(1, layer)
+
+def createAndAssignDomains(layer):
+    arcpy.AddMessage("Nieuw domein aanmaken")
+    arcpy.management.CreateDomain(gdb, "fouten_domein", domain_type="CODED", field_type="TEXT")
+    domain_path = r"G:\civ\IGA_ATG\Producten\DTB\Toetstooling\dropdown-menu\invulvelden.txt"
+    arcpy.AddMessage("Domeinpad openen")
+    with open(domain_path, 'r') as domainfile:
+        arcpy.AddMessage("Regels lezen")
+        lines = [line.strip() for line in domainfile if line.strip()]
+    arcpy.AddMessage("Regels converteren naar library")
+    domeinkeuzes = {line: line for line in lines}
+    arcpy.AddMessage("Domeinkeuzes toevoegen aan domein")
+    for fouttype in domeinkeuzes:        
+        arcpy.management.AddCodedValueToDomain(gdb, "fouten_domein", fouttype, domeinkeuzes[fouttype])
+     
+createEmptyLayer(ivrinummer)
