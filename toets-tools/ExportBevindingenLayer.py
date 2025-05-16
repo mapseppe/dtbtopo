@@ -87,7 +87,7 @@ def writeOutput(toetspath, inputlayer):
                 xcoord = row[4] if row[4] is not None else ""
                 ycoord = row[5] if row[5] is not None else ""
                 file.write(f"Zie volgnummer {volgnummer} in het meegestuurde shapefile bestand, ter plaatse van x={xcoord}, y={ycoord}.\n"
-                           + f"{fout}\n"
+                           + f"{fout}.\n"
                            + f"{omschrijving}\n"
                            + f"{bijlagetxt}\n"
                            + "--------------------------------\n")
