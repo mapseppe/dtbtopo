@@ -3,6 +3,7 @@ import os
 import zipfile
 import shutil
 import openpyxl
+from openpyxl.utils import coordinate_to_tuple
 #interpreter C:\Program Files\ArcGIS\Pro\bin\Python\envs\arcgispro-py3
 
 #Environment
@@ -12,6 +13,7 @@ arcpy.env.overwriteOutput = True
 inputlayer = arcpy.GetParameterAsText(0) #Configure parameter: Input, Feature Layer, Required
 ivrinummer = arcpy.GetParameterAsText(1) #Configure parameter: Input, String, Required
 rapportnaam = arcpy.GetParameterAsText(2) #Configure parameter: Input, String, Required
+templatesheet = arcpy.GetParameterAsText(3) #Configure parameter: Input, File, Optional
 
 def checkIVRIpath(ivrinummer):
     base_outputpath = r"M:\IVRI"
@@ -69,8 +71,11 @@ def writeOutput(toetspath, inputlayer):
 
     #beoordelingsrapport kopiëren
     arcpy.AddMessage(f"Beoordelingsrapport kopiëren")
-    standard_rapport = rf"G:\civ\IGA_ATG\Producten\DTB\Toetstooling\beoordelingsrapport_template\beoordelingsrapport_dtb.xlsm"
-    rapport_loc = rf"{toetspath}\Beoordelingsrapport_{rapportnaam}_{toetsnr}.xlsm"
+    if templatesheet != "":
+        standard_rapport = templatesheet
+    else:
+        standard_rapport = rf"G:\civ\IGA_ATG\Producten\DTB\Toetstooling\beoordelingsrapport_template\beoordelingsrapport_dtb.xlsm"
+    rapport_loc = rf"{toetspath}\{rapportnaam}_{toetsnr}.xlsm"
     shutil.copy2(standard_rapport, rapport_loc)
     excel = openpyxl.load_workbook(rapport_loc, keep_vba=True)
     excelsheet = excel["Beoordelingsrapport"]
@@ -125,6 +130,11 @@ def writeOutput(toetspath, inputlayer):
                     cellvalue = ""
                 newcellvalue = cellvalue + fulltext
                 excelsheet[targetcell] = newcellvalue
+                
+                #verander de row height van de cel
+                rownumber = coordinate_to_tuple(targetcell)[0]
+                currentrowh = excelsheet.row_dimensions[rownumber].height
+                excelsheet.row_dimensions[rownumber].height = currentrowh + 100
                 
     excel.save(rapport_loc)
     
