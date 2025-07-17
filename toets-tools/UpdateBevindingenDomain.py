@@ -15,10 +15,16 @@ def checkCurrentDomains():
     domains = arcpy.da.ListDomains(gdb)
     domain_names = [d.name for d in domains]
     if "fouten_domein" in domain_names:
-        deleteDomain()
+        deleteDomain("fouten_domein")
         createDomain()
     else:
         createDomain()
+    if "zichtbaar_domein" in domain_names:
+        deleteDomain("zichtbaar_domein")
+        createZichtbaarDomain()
+    else:
+        createZichtbaarDomain()
+        
 
 def createDomain():
     arcpy.AddMessage("Nieuw domein aanmaken")
@@ -33,11 +39,16 @@ def createDomain():
     arcpy.AddMessage("Domeinkeuzes toevoegen aan domein")
     for fouttype in domeinkeuzes:        
         arcpy.management.AddCodedValueToDomain(gdb, "fouten_domein", fouttype, domeinkeuzes[fouttype])
+    
+def createZichtbaarDomain():
+    arcpy.management.CreateDomain(gdb, "zichtbaar_domein", domain_type="CODED", field_type="TEXT")
+    arcpy.management.AddCodedValueToDomain(gdb, "zichtbaar_domein", "Ja", "Ja")
+    arcpy.management.AddCodedValueToDomain(gdb, "zichtbaar_domein", "Nee", "Nee")
 
-def deleteDomain():
+def deleteDomain(domainname):
     arcpy.AddMessage("Oud domein re-namen")
     randomnr = uniform(100000, 999999)
-    domeinrename = f"fouten_domein{randomnr}"
-    arcpy.management.AlterDomain(gdb, "fouten_domein", domeinrename)
+    domeinrename = f"{domainname}{randomnr}"
+    arcpy.management.AlterDomain(gdb, domainname, domeinrename)
 
 checkCurrentDomains()

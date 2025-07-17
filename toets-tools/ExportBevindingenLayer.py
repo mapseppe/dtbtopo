@@ -14,6 +14,7 @@ inputlayer = arcpy.GetParameterAsText(0) #Configure parameter: Input, Feature La
 ivrinummer = arcpy.GetParameterAsText(1) #Configure parameter: Input, String, Required
 rapportnaam = arcpy.GetParameterAsText(2) #Configure parameter: Input, String, Required
 templatesheet = arcpy.GetParameterAsText(3) #Configure parameter: Input, File, Optional
+tempsave = arcpy.GetParameterAsText(4) #Configure parameter: Input, Boolean, Required, Default"False"
 
 def checkIVRIpath(ivrinummer):
     base_outputpath = r"M:\IVRI"
@@ -50,8 +51,11 @@ def writeOutput(toetspath, inputlayer):
     #Save feature met 'Zichtbaar = Ja'
     arcpy.AddMessage(f"on-shapefile opslaan")
     toetsnr = 1
-    while os.path.exists(rf"{toetspath}\toets_on_{toetsnr}"):
-        toetsnr += 1
+    if tempsave == "true":
+        toetsnr = "concept"
+    else:
+        while os.path.exists(rf"{toetspath}\toets_on_{toetsnr}"):
+            toetsnr += 1
     toetspath_on = rf"{toetspath}\toets_on_{toetsnr}"
     os.makedirs(toetspath_on)
     shapepath_on = rf"{toetspath_on}\bevindingen.shp"
@@ -84,8 +88,8 @@ def writeOutput(toetspath, inputlayer):
     vraag_cel_map = {
         "Hier wordt niet voldaan aan de eisen gesteld aan de bestandsopbouw": "C91",
         "Hier wordt niet voldaan aan de eisen gesteld aan de attribuutwaarden": "C98",
-        "Hier wordt niet voldaan aan de eisen gesteld aan de inwinning van objecten": "C105",
-        "Hier sluit het nieuwe DTB niet goed aan op het oude DTB": "C112",
+        "Hier sluit het nieuwe DTB niet goed aan op het oude DTB": "C105",
+        "Hier wordt niet voldaan aan de eisen gesteld aan de inwinning van objecten": "C112",
         "Hier wordt niet voldaan aan de eisen gesteld aan de volledigheid": "C119",
         "Hier wordt niet voldaan aan de eisen gesteld aan de meetpunten": "C126"
     }
@@ -94,7 +98,7 @@ def writeOutput(toetspath, inputlayer):
     arcpy.AddMessage(f"Beoordelingsrapport vullen")
     kolom1 = "Volgnummer"
     kolom2 = "Fout"
-    kolom3 = "Omschrijving"
+    kolom3 = "Omschrijvi"
     kolom4 = "Bijlage_nr"
     kolom5 = "xcoord"
     kolom6 = "ycoord"
@@ -117,7 +121,6 @@ def writeOutput(toetspath, inputlayer):
                 fulltext = (
                     f"Zie volgnummer {volgnummer} in het meegestuurde shapefile bestand, "
                     f"ter plaatse van x={xcoord}, y={ycoord}.\n"
-                    f"{fout}.\n"
                     f"{omschrijving}\n"
                     f"{bijlagetxt}\n"
                     "--------------------------------\n"
@@ -136,28 +139,16 @@ def writeOutput(toetspath, inputlayer):
                 currentrowh = excelsheet.row_dimensions[rownumber].height
                 excelsheet.row_dimensions[rownumber].height = currentrowh + 100
                 
+                fout_bevinding_map = {"C91":"M90","C98":"M97","C105":"M104","C112":"M111","C119":"M118","C126":"M125"}
+                for c_cell, m_cell in fout_bevinding_map.items():
+                    c_value = excelsheet[c_cell].value
+                    if c_value is None:
+                        excelsheet[m_cell].value = "Ja"
+                    else:
+                        excelsheet[m_cell].value = "Nee"
+                    rownumber2 = coordinate_to_tuple(m_cell)[0]
+                    excelsheet.row_dimensions[rownumber2].height = 35
+                
     excel.save(rapport_loc)
-    
-    #Tekstfile schrijven - WORDT NIET MEER GEDAAN, WORDT NU IN SPREADSHEET INGEVULD
-    # arcpy.AddMessage(f"textfile aanmaken")
-    # txtfile_outputpath = rf"{toetspath}\toets_tekst_{toetsnr}.txt"
-    # with open(txtfile_outputpath, "w", encoding="utf-8") as file:
-    #     with arcpy.da.SearchCursor(inputlayer, [kolom1, kolom2, kolom3, kolom4, kolom5, kolom6]) as cursor:
-    #         for row in cursor:
-    #             volgnummer = row[0] if row[0] is not None else ""
-    #             fout = row[1] if row[1] is not None else ""
-    #             omschrijving = row[2] if row[2] is not None else ""
-    #             bijlage = row[3] if row[3] is not None else ""
-    #             if bijlage == "":
-    #                 bijlagetxt = ""
-    #             else:
-    #                 bijlagetxt = f"Zie bijlage {bijlage}."
-    #             xcoord = row[4] if row[4] is not None else ""
-    #             ycoord = row[5] if row[5] is not None else ""
-    #             file.write(f"Zie volgnummer {volgnummer} in het meegestuurde shapefile bestand, ter plaatse van x={xcoord}, y={ycoord}.\n"
-    #                        + f"{fout}.\n"
-    #                        + f"{omschrijving}\n"
-    #                        + f"{bijlagetxt}\n"
-    #                        + "--------------------------------\n")
-    
+
 checkIVRIpath(ivrinummer)
