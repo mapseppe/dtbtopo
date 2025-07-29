@@ -24,17 +24,9 @@ def createEmptyLayer(ivrinummer):
         template=r"G:\civ\IGA_ATG\Producten\DTB\Toetstooling\datamodel_template\datamodel_template.shp",
         geometry_type="POINT",
         spatial_reference=arcpy.SpatialReference(28992))
-    
-    #Voeg velden toe aan laag
-    #arcpy.AddMessage("Velden toevoegen aan laag")
-    #arcpy.management.AddField(layer, "Volgnummer", "TEXT")
-    #arcpy.management.AddField(layer, "Zichtbaar", "TEXT")
-    #arcpy.management.AddField(layer, "Fout", "TEXT")
-    #arcpy.management.AddField(layer, "Omschrijving", "TEXT", field_length=2000)
-    #arcpy.management.AddField(layer, "Bijlage_nr", "TEXT")
-    #arcpy.management.AddField(layer, "xcoord", "LONG")
-    #arcpy.management.AddField(layer, "ycoord", "LONG")
+
     arcpy.management.AssignDefaultToField(layer, "Zichtbaar", "Ja")
+    arcpy.management.AssignDefaultToField(layer, "Voorkomen", "Eenmalig")
  
     #Check of het domein al bestaat en zo niet maak het aan
     arcpy.AddMessage("Check of domein al bestaat")
@@ -46,6 +38,7 @@ def createEmptyLayer(ivrinummer):
         arcpy.AddMessage("Domein toevoegen aan nieuwe layer veld")
         arcpy.management.AssignDomainToField(layer, "Fout", "fouten_domein")
         arcpy.management.AssignDomainToField(layer, "Zichtbaar", "zichtbaar_domein")
+        arcpy.management.AssignDomainToField(layer, "Voorkomen", "voorkomen_domein")
     
         #Apply standaard symbologie voor layer
         arcpy.AddMessage("Laag toevoegen aan project")

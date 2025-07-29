@@ -48,15 +48,19 @@ def writeOutput(toetspath, inputlayer):
     shp_outputpath = rf"{toetspath}\toets_totaal\bevindingen-totaal.shp"
     arcpy.management.CopyFeatures(inputlayer, shp_outputpath)
     
-    #Save feature met 'Zichtbaar = Ja'
+    #Stel naamgeving in
     arcpy.AddMessage(f"on-shapefile opslaan")
-    toetsnr = 1
+    toetsnr = 0
+    toetssfx = ""
     if tempsave == "true":
-        toetsnr = "concept"
+        toetssfx = "_concept"
     else:
-        while os.path.exists(rf"{toetspath}\toets_on_{toetsnr}"):
+        while os.path.exists(rf"{toetspath}\toets_on{toetssfx}"):
             toetsnr += 1
-    toetspath_on = rf"{toetspath}\toets_on_{toetsnr}"
+            toetssfx = f"_{toetsnr}"
+    toetspath_on = rf"{toetspath}\toets_on{toetssfx}"
+    
+    #Save feature met 'Zichtbaar = Ja'
     os.makedirs(toetspath_on)
     shapepath_on = rf"{toetspath_on}\bevindingen.shp"
     arcpy.management.SelectLayerByAttribute(inputlayer, "NEW_SELECTION", '"Zichtbaar" = \'Ja\'')
@@ -64,8 +68,8 @@ def writeOutput(toetspath, inputlayer):
     
     #Make it a zipfile
     arcpy.AddMessage(f"shapefile zippen")
-    shp_folder = rf"{toetspath}\toets_on_{toetsnr}"
-    zip_outputpath = rf"{toetspath}\toets_on_{toetsnr}.zip"
+    shp_folder = rf"{toetspath}\toets_on_{toetssfx}"
+    zip_outputpath = rf"{toetspath}\toets_on{toetssfx}.zip"
     with zipfile.ZipFile(zip_outputpath, 'w', zipfile.ZIP_DEFLATED) as zipf:
         for root, dirs, files in os.walk(shp_folder):
             for file in files:
@@ -79,7 +83,7 @@ def writeOutput(toetspath, inputlayer):
         standard_rapport = templatesheet
     else:
         standard_rapport = rf"G:\civ\IGA_ATG\Producten\DTB\Toetstooling\beoordelingsrapport_template\beoordelingsrapport_dtb.xlsm"
-    rapport_loc = rf"{toetspath}\{rapportnaam}_{toetsnr}.xlsm"
+    rapport_loc = rf"{toetspath}\{rapportnaam}{toetssfx}.xlsm"
     shutil.copy2(standard_rapport, rapport_loc)
     excel = openpyxl.load_workbook(rapport_loc, keep_vba=True)
     excelsheet = excel["Beoordelingsrapport"]
@@ -100,9 +104,10 @@ def writeOutput(toetspath, inputlayer):
     kolom2 = "Fout"
     kolom3 = "Omschrijvi"
     kolom4 = "Bijlage_nr"
-    kolom5 = "xcoord"
-    kolom6 = "ycoord"
-    with arcpy.da.SearchCursor(inputlayer, [kolom1, kolom2, kolom3, kolom4, kolom5, kolom6]) as cursor:
+    kolom5 = "Voorkomen"
+    kolom6 = "xcoord"
+    kolom7 = "ycoord"
+    with arcpy.da.SearchCursor(inputlayer, [kolom1, kolom2, kolom3, kolom4, kolom5, kolom6, kolom7]) as cursor:
             for row in cursor:
                 
                 #lees attributentabel en vertaal naar veriabelen
@@ -114,16 +119,23 @@ def writeOutput(toetspath, inputlayer):
                     bijlagetxt = ""
                 else:
                     bijlagetxt = f"Zie bijlage {bijlage}."
-                xcoord = row[4] if row[4] is not None else ""
-                ycoord = row[5] if row[5] is not None else ""
+                voorkomen = row[4] if row[4] is not None else ""
+                if voorkomen == "Eenmalig":
+                    voorkomentxt = ""
+                elif voorkomen == "Meermalig":
+                    voorkomentxt = f"Deze situatie komt vaker voor in het geleverde DTB-bestand.\n"
+                xcoord = row[5] if row[5] is not None else ""
+                ycoord = row[6] if row[6] is not None else ""
                 
                 #maak er een volledig stuk standaardtekst van
                 fulltext = (
+                    f"\n"
                     f"Zie volgnummer {volgnummer} in het meegestuurde shapefile bestand, "
                     f"ter plaatse van x={xcoord}, y={ycoord}.\n"
                     f"{omschrijving}\n"
+                    f"{voorkomentxt}"
                     f"{bijlagetxt}\n"
-                    "--------------------------------\n"
+                    "--------------------------------"
                 )
                 
                 #voeg het toe in de besbetreffende cel

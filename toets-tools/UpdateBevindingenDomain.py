@@ -14,18 +14,25 @@ def checkCurrentDomains():
     arcpy.AddMessage("Check of domein al bestaat")
     domains = arcpy.da.ListDomains(gdb)
     domain_names = [d.name for d in domains]
+    
     if "fouten_domein" in domain_names:
         deleteDomain("fouten_domein")
         createDomain()
     else:
         createDomain()
+        
     if "zichtbaar_domein" in domain_names:
         deleteDomain("zichtbaar_domein")
         createZichtbaarDomain()
     else:
         createZichtbaarDomain()
         
-
+    if "voorkomen_domein" in domain_names:
+        deleteDomain("voorkomen_domein")
+        createVoorkomenDomain()
+    else:
+        createVoorkomenDomain()
+        
 def createDomain():
     arcpy.AddMessage("Nieuw domein aanmaken")
     arcpy.management.CreateDomain(gdb, "fouten_domein", domain_type="CODED", field_type="TEXT")
@@ -44,6 +51,11 @@ def createZichtbaarDomain():
     arcpy.management.CreateDomain(gdb, "zichtbaar_domein", domain_type="CODED", field_type="TEXT")
     arcpy.management.AddCodedValueToDomain(gdb, "zichtbaar_domein", "Ja", "Ja")
     arcpy.management.AddCodedValueToDomain(gdb, "zichtbaar_domein", "Nee", "Nee")
+
+def createVoorkomenDomain():
+    arcpy.management.CreateDomain(gdb, "voorkomen_domein", domain_type="CODED", field_type="TEXT")
+    arcpy.management.AddCodedValueToDomain(gdb, "voorkomen_domein", "Eenmalig", "Eenmalig")
+    arcpy.management.AddCodedValueToDomain(gdb, "voorkomen_domein", "Meermalig", "Meermalig")
 
 def deleteDomain(domainname):
     arcpy.AddMessage("Oud domein re-namen")
