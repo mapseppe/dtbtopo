@@ -39,14 +39,17 @@ def checkIVRIpath(ivrinummer):
         arcpy.AddError(f"IVRI Pad: {ivri_path} bestaat niet")
     
 def writeOutput(toetspath, inputlayer):
+    #Sorteer op fouttype
+    sortedlayer = arcpy.management.Sort(inputlayer, "in_memory\sort", [["Fout", "ASCENDING"]])
+    
     #Vul X en Y coördinaten in
-    arcpy.management.CalculateGeometryAttributes(inputlayer, [["xcoord", "POINT_X"],
+    arcpy.management.CalculateGeometryAttributes(sortedlayer, [["xcoord", "POINT_X"],
                                                               ["ycoord", "POINT_Y"]])
     
     #Save feature (alles)
     arcpy.AddMessage(f"totaal-shapefile opslaan")
     shp_outputpath = rf"{toetspath}\toets_totaal\bevindingen-totaal.shp"
-    arcpy.management.CopyFeatures(inputlayer, shp_outputpath)
+    arcpy.management.CopyFeatures(sortedlayer, shp_outputpath)
     
     #Stel naamgeving in
     arcpy.AddMessage(f"on-shapefile opslaan")
@@ -63,8 +66,16 @@ def writeOutput(toetspath, inputlayer):
     #Save feature met 'Zichtbaar = Ja'
     os.makedirs(toetspath_on)
     shapepath_on = rf"{toetspath_on}\bevindingen.shp"
-    arcpy.management.SelectLayerByAttribute(inputlayer, "NEW_SELECTION", '"Zichtbaar" = \'Ja\'')
-    arcpy.management.CopyFeatures(inputlayer, shapepath_on)
+    arcpy.AddMessage(f"Volgnummers toepassen")
+    volgnr = 1
+    with arcpy.da.UpdateCursor(sortedlayer, ["Volgnummer"], '"Zichtbaar" = \'Ja\'') as cursor:
+        for row in cursor:
+            row[0] = volgnr
+            cursor.updateRow(row)
+            volgnr += 1
+    zichtbaarlayer = arcpy.management.SelectLayerByAttribute(sortedlayer, "NEW_SELECTION", '"Zichtbaar" = \'Ja\'')
+    onlayer = arcpy.management.CopyFeatures(zichtbaarlayer, shapepath_on)
+    arcpy.management.DeleteField(onlayer, ["Zichtbaar","Voorkomen", "ORIG_FID"])
     
     #Make it a zipfile
     arcpy.AddMessage(f"shapefile zippen")
@@ -90,12 +101,12 @@ def writeOutput(toetspath, inputlayer):
     
     #standaardcellen, moet overeenkomen met de 'invulvelden.txt' van het dropdownmenu/domein
     vraag_cel_map = {
-        "Hier wordt niet voldaan aan de eisen gesteld aan de bestandsopbouw": "C91",
-        "Hier wordt niet voldaan aan de eisen gesteld aan de attribuutwaarden": "C98",
-        "Hier sluit het nieuwe DTB niet goed aan op het oude DTB": "C105",
-        "Hier wordt niet voldaan aan de eisen gesteld aan de inwinning van objecten": "C112",
-        "Hier wordt niet voldaan aan de eisen gesteld aan de volledigheid": "C119",
-        "Hier wordt niet voldaan aan de eisen gesteld aan de meetpunten": "C126"
+        "6.3 Hier wordt niet voldaan aan de eisen gesteld aan de bestandsopbouw": "C91",
+        "6.4 Hier wordt niet voldaan aan de eisen gesteld aan de attribuutwaarden": "C98",
+        "6.5 Hier sluit het nieuwe DTB niet goed aan op het oude DTB": "C105",
+        "6.6 Hier wordt niet voldaan aan de eisen gesteld aan de inwinning van objecten": "C112",
+        "6.7 Hier wordt niet voldaan aan de eisen gesteld aan de volledigheid": "C119",
+        "6.8 Hier wordt niet voldaan aan de eisen gesteld aan de meetpunten": "C126"
     }
     
     #schrijf een standaardtekst in de cel voor elke shape
@@ -107,7 +118,7 @@ def writeOutput(toetspath, inputlayer):
     kolom5 = "Voorkomen"
     kolom6 = "xcoord"
     kolom7 = "ycoord"
-    with arcpy.da.SearchCursor(inputlayer, [kolom1, kolom2, kolom3, kolom4, kolom5, kolom6, kolom7]) as cursor:
+    with arcpy.da.SearchCursor(sortedlayer, [kolom1, kolom2, kolom3, kolom4, kolom5, kolom6, kolom7]) as cursor:
             for row in cursor:
                 
                 #lees attributentabel en vertaal naar veriabelen
@@ -118,7 +129,7 @@ def writeOutput(toetspath, inputlayer):
                 if bijlage == "":
                     bijlagetxt = ""
                 else:
-                    bijlagetxt = f"Zie bijlage {bijlage}."
+                    bijlagetxt = f"Zie bijlage {bijlage}.\n"
                 voorkomen = row[4] if row[4] is not None else ""
                 if voorkomen == "Eenmalig":
                     voorkomentxt = ""
@@ -134,7 +145,7 @@ def writeOutput(toetspath, inputlayer):
                     f"ter plaatse van x={xcoord}, y={ycoord}.\n"
                     f"{omschrijving}\n"
                     f"{voorkomentxt}"
-                    f"{bijlagetxt}\n"
+                    f"{bijlagetxt}"
                     "--------------------------------"
                 )
                 
