@@ -79,8 +79,8 @@ def writeOutput(toetspath, inputlayer):
     
     #Make it a zipfile
     arcpy.AddMessage(f"shapefile zippen")
-    shp_folder = rf"{toetspath}\toets_on_{toetssfx}"
-    zip_outputpath = rf"{toetspath}\toets_on{toetssfx}.zip"
+    shp_folder = rf"{toetspath}\toets_on{toetssfx}"
+    zip_outputpath = rf"{toetspath}\bevindingen_shapefile{toetssfx}.zip"
     with zipfile.ZipFile(zip_outputpath, 'w', zipfile.ZIP_DEFLATED) as zipf:
         for root, dirs, files in os.walk(shp_folder):
             for file in files:
@@ -118,7 +118,7 @@ def writeOutput(toetspath, inputlayer):
     kolom5 = "Voorkomen"
     kolom6 = "xcoord"
     kolom7 = "ycoord"
-    with arcpy.da.SearchCursor(sortedlayer, [kolom1, kolom2, kolom3, kolom4, kolom5, kolom6, kolom7]) as cursor:
+    with arcpy.da.SearchCursor(zichtbaarlayer, [kolom1, kolom2, kolom3, kolom4, kolom5, kolom6, kolom7]) as cursor:
             for row in cursor:
                 
                 #lees attributentabel en vertaal naar veriabelen
