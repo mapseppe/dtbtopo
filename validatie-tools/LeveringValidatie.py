@@ -80,12 +80,35 @@ def validatieA(input, output):
             result_count = int(arcpy.management.GetCount(result)[0])
             if result_count > 0:
                 arcpy.AddMessage(f"ValidatieA resultaten voor niveau {niveau} toevoegen aan output")
+                arcpy.management.AddField(result, "FOUT", "TEXT")
+                arcpy.management.CalculateField(result, "FOUT", '"Onjuist gescheiden vlakken"')
                 arcpy.management.Append(result, validatie_lijnen, "NO_TEST")
             else:
                 arcpy.AddMessage(f"Geen resultaten voor ValidatieA voor niveau {niveau}")
 
 def validatieB(input, output):
-    return
+    
+    poly_fc = f"{input}\DTB_GROND_VLAKKEN"
+    point_fc = f"{input}\DTB_OVERIGE_PUNTEN"
+    
+    arcpy.AddMessage("Filtering polygons to bos-achtige vlakken")
+    arcpy.management.MakeFeatureLayer(poly_fc, "poly_layer", "TYPE = 30304 OR TYPE = 30305 OR TYPE = 30306 OR TYPE = 30307")
+    arcpy.AddMessage("Filtering points to boom-achtige punten")
+    arcpy.management.MakeFeatureLayer(point_fc, "point_layer", "TYPE = 11002 OR TYPE = 11037")
+    
+    arcpy.AddMessage("Selecting polygons that contain points")
+    result = arcpy.management.SelectLayerByLocation(
+        "point_layer", "WITHIN", "poly_layer", selection_type="NEW_SELECTION"
+    )
+    arcpy.AddMessage("Exporting results...")
+    boomcount = int(arcpy.management.GetCount(result)[0])
+    if boomcount > 0:
+        arcpy.management.AddField(result, "FOUT", "TEXT")
+        arcpy.management.CalculateField(result, "FOUT", '"Boom in boomachtige vlak"')
+        arcpy.management.CopyFeatures("point_layer", rf"{output}\validatie_punten")
+        arcpy.AddMessage(f"Done!")
+    else:
+        arcpy.AddMessage(f"Geen onjuist geplaatste bomen")
     
 def validatieC(input, output):
     return
@@ -109,7 +132,3 @@ arcpy.AddMessage("Validatie output toevoegen aan ArcGIS Project")
 arcpy.SetParameter(4, rf"{outputpath}\validatie_punten")
 arcpy.SetParameter(5, rf"{outputpath}\validatie_lijnen")
 arcpy.SetParameter(6, rf"{outputpath}\validatie_vlakken")
-
-#Join VERSCHIL to validatieOUTPUT
-#Stel een definition query in voor alle objecten die Verschil != Ongewijzigd
-#Met bijv. lyr.updateDefinitionQueries
