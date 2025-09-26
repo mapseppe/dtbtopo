@@ -19,7 +19,7 @@ tempsave = arcpy.GetParameterAsText(4) #Configure parameter: Input, Boolean, Req
 def checkBGTpath(bgtnummer):
     base_outputpath = r"G:\civ\IGA_ATG\Producten\BGT\Toetstooling\toetsrapporten"
     bgt_path = rf"{base_outputpath}\{bgtnummer}"
-    toets_path = rf"{bgt_path}\toets"
+    toets_path = rf"{bgt_path}"
     if os.path.exists(toets_path) and os.path.isdir(toets_path):
         writeOutput(toets_path, inputlayer)
     else:
