@@ -13,7 +13,6 @@ outputlayer = arcpy.GetParameterAsText(1) #Configure parameter: Output, Feature 
 arcproj = arcpy.mp.ArcGISProject("CURRENT")
 gdb = arcproj.defaultGeodatabase
 
-#Doorloop elke DTB layer in the output.gdb
 def createEmptyLayer(ivrinummer):
     #Nieuwe layer voor huidige ArcPro sessie
     arcpy.AddMessage("Nieuwe laag creëren")
